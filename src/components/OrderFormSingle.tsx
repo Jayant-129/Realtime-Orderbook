@@ -179,7 +179,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
               className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
                 form.side === "buy"
                   ? "bg-green-600/20 text-green-400 border-green-600"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  : "bg-black text-gray-400 hover:bg-gray-900"
               }`}
               style={form.side === "buy" ? { borderColor: "var(--bid)" } : {}}
             >
@@ -191,7 +191,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
               className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
                 form.side === "sell"
                   ? "bg-red-600/20 text-red-400 border-red-600"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  : "bg-black text-gray-400 hover:bg-gray-900"
               }`}
               style={form.side === "sell" ? { borderColor: "var(--ask)" } : {}}
             >
@@ -287,7 +287,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
             Simulation Results
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-xs">
-            <div className="flex flex-col bg-gray-800/50 rounded p-3">
+            <div className="flex flex-col bg-black rounded p-3">
               <span className="muted font-medium">Fill %</span>
               <span
                 className={`text-lg font-mono ${
@@ -299,13 +299,13 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
                 {lastResult.estFillPct.toFixed(1)}%
               </span>
             </div>
-            <div className="flex flex-col bg-gray-800/50 rounded p-3">
+            <div className="flex flex-col bg-black rounded p-3">
               <span className="muted font-medium">Avg Price</span>
               <span className="text-lg font-mono text-gray-200">
                 {lastResult.estAvgPx.toFixed(2)}
               </span>
             </div>
-            <div className="flex flex-col bg-gray-800/50 rounded p-3">
+            <div className="flex flex-col bg-black rounded p-3">
               <span className="muted font-medium">Slippage</span>
               <span
                 className={`text-lg font-mono ${
@@ -317,7 +317,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
                 {lastResult.estSlippageBps.toFixed(1)} bps
               </span>
             </div>
-            <div className="flex flex-col bg-gray-800/50 rounded p-3">
+            <div className="flex flex-col bg-black rounded p-3">
               <span className="muted font-medium">Impact</span>
               <span
                 className={`text-lg font-mono ${
@@ -329,7 +329,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
                 {lastResult.impactQtyLevels} levels
               </span>
             </div>
-            <div className="flex flex-col bg-gray-800/50 rounded p-3">
+            <div className="flex flex-col bg-black rounded p-3">
               <span className="muted font-medium">Time to Fill</span>
               <span className="text-lg font-mono text-gray-200">
                 {form.delayMs > 0 ? `${form.delayMs}ms` : "Instant"}

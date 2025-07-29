@@ -29,8 +29,8 @@ export default function MarketStats({ venue, symbol }: MarketStatsProps) {
   };
 
   return (
-    <div className="card bg-gray-800/50 border border-gray-600/30 p-3 h-full flex flex-col overflow-hidden">
-      <h3 className="text-xs font-medium text-gray-300 text-center mb-2">
+    <div className="card bg-black border border-gray-800 p-3 h-full flex flex-col overflow-hidden">
+      <h3 className="text-xs font-medium text-white text-center mb-2">
         Market Stats
       </h3>
       <div className="grid grid-cols-4 gap-2 flex-1 items-center text-center min-w-0">

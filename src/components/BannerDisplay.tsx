@@ -39,10 +39,10 @@ type BannerItemProps = {
 
 function BannerItem({ banner, onDismiss }: BannerItemProps) {
   const typeStyles = {
-    info: "bg-blue-900/90 border-blue-600 text-blue-100",
-    warning: "bg-yellow-900/90 border-yellow-600 text-yellow-100",
-    error: "bg-red-900/90 border-red-600 text-red-100",
-    success: "bg-green-900/90 border-green-600 text-green-100",
+    info: "bg-black/95 border-blue-600 text-blue-100",
+    warning: "bg-black/95 border-yellow-600 text-yellow-100",
+    error: "bg-black/95 border-red-600 text-red-100",
+    success: "bg-black/95 border-green-600 text-green-100",
   };
 
   const iconMap = {
@@ -56,7 +56,8 @@ function BannerItem({ banner, onDismiss }: BannerItemProps) {
     <div
       className={`
       flex items-center gap-3 p-3 rounded-lg border backdrop-blur-sm
-      shadow-lg banner-enter
+      shadow-lg banner-enter transition-all duration-200
+      hover:shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:border-white/50
       ${typeStyles[banner.type]}
     `}
     >

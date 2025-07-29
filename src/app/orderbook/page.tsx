@@ -57,13 +57,10 @@ export default function Page() {
 
   return (
     <div className="min-h-screen p-4 lg:p-6 space-y-4 lg:space-y-6">
-      <div className="text-center lg:text-left">
+      <div className="text-center">
         <h1 className="text-2xl lg:text-3xl font-bold">
           Live Orderbook Trading
         </h1>
-        <p className="text-sm muted mt-1">
-          Real-time data • Order simulation • Market analysis
-        </p>
       </div>
 
       <div className="card p-4">

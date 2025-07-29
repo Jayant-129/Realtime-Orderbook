@@ -133,7 +133,7 @@ export default function DepthChart({ venue, symbol }: Props) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Market Depth</h3>
         </div>
-        <div className="h-48 flex items-center justify-center text-sm muted border border-dashed border-gray-600 rounded">
+        <div className="h-48 flex items-center justify-center text-sm muted border border-dashed border-gray-800 rounded">
           No depth data available
         </div>
       </div>

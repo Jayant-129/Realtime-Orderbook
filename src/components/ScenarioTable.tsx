@@ -27,7 +27,7 @@ export default function ScenarioTable() {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-gray-700">
+              <tr className="border-b border-gray-800">
                 <th className="text-left py-2 px-3 muted font-medium">Time</th>
                 <th className="text-left py-2 px-3 muted font-medium">Venue</th>
                 <th className="text-left py-2 px-3 muted font-medium">
@@ -50,9 +50,9 @@ export default function ScenarioTable() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/50">
+            <tbody className="divide-y divide-gray-800/50">
               {history.slice(0, 10).map((scenario, index) => (
-                <tr key={scenario.id} className="hover:bg-gray-800/30">
+                <tr key={scenario.id} className="hover:bg-black/30">
                   <td className="py-2 px-3 font-mono">
                     {scenario.results.length > 0
                       ? new Date(scenario.results[0].ts).toLocaleTimeString()

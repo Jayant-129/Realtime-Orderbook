@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0e1320; /* deep ink (not pure black) */
-  --surface-1: #111827; /* slate-900 */
-  --surface-2: #0b1220;
-  --surface-3: #192235; /* raised cards */
+  --bg: #000000; /* pure black */
+  --surface-1: #0a0a0a; /* very dark gray */
+  --surface-2: #050505; /* almost black */
+  --surface-3: #111111; /* dark raised cards */
 
-  --text: #e7ecf2;
-  --muted: #98a6bd;
-  --subtle: #6b7790;
+  --text: #ffffff;
+  --muted: #cccccc;
+  --subtle: #888888;
 
-  --border: #1e2a3b;
-  --divider: #182233;
+  --border: #222222;
+  --divider: #1a1a1a;
 
   --accent: #60a5fa;
   --success: #22c55e;
@@ -21,8 +21,8 @@
   --bid: #19c38a;
   --ask: #ff6b6b;
 
-  --grid: #213049;
-  --tooltip: #0f172a;
+  --grid: #1a1a1a;
+  --tooltip: #000000;
 
   /* Tailwind compatibility */
   --background: var(--bg);
@@ -81,7 +81,7 @@ body {
 /* Orderbook header with blur effect */
 .orderbook-header {
   backdrop-filter: blur(8px);
-  background-color: rgba(17, 24, 39, 0.95) !important;
+  background-color: rgba(0, 0, 0, 0.95) !important;
 }
 
 /* Highlighted rows in order book */
