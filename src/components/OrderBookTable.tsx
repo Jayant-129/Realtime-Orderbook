@@ -1,20 +1,23 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useAppSelector } from "@/store";
 import {
   selectTopN,
   selectHighlight,
   selectBookStatus,
 } from "@/store/selectors";
+import { VenueSymbolProps } from "@/lib/types";
 
-type Props = {
-  venue: "OKX" | "Bybit" | "Deribit";
-  symbol: string;
+interface OrderBookTableProps extends VenueSymbolProps {
   levels?: number;
-};
+}
 
-export default function OrderBookTable({ venue, symbol, levels = 100 }: Props) {
+export default function OrderBookTable({
+  venue,
+  symbol,
+  levels = 100,
+}: OrderBookTableProps) {
   const { bids, asks } = useAppSelector(selectTopN(venue, symbol, levels));
   const bidHighlight = useAppSelector(selectHighlight(venue, symbol, "buy"));
   const askHighlight = useAppSelector(selectHighlight(venue, symbol, "sell"));
@@ -33,11 +36,11 @@ export default function OrderBookTable({ venue, symbol, levels = 100 }: Props) {
   };
 
   const maxBidSize = useMemo(() => {
-    return bids.length > 0 ? Math.max(...bids.map(([_, size]) => size)) : 0;
+    return bids.length > 0 ? Math.max(...bids.map(([, size]) => size)) : 0;
   }, [bids]);
 
   const maxAskSize = useMemo(() => {
-    return asks.length > 0 ? Math.max(...asks.map(([_, size]) => size)) : 0;
+    return asks.length > 0 ? Math.max(...asks.map(([, size]) => size)) : 0;
   }, [asks]);
 
   const getBarWidth = (size: number, isAsk: boolean) => {

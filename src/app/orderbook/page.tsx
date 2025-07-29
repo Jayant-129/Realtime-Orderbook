@@ -11,23 +11,19 @@ import BannerDisplay from "@/components/BannerDisplay";
 import SearchableDropdown from "@/components/SearchableDropdown";
 import MarketStats from "@/components/MarketStats";
 import { connectBook, disconnectBook } from "@/store/wsMiddleware";
-
-const VENUE_SYMBOL_PLACEHOLDERS = {
-  OKX: "BTC-USDT",
-  Bybit: "BTCUSDT",
-  Deribit: "BTC-PERPETUAL",
-} as const;
+import { Venue } from "@/lib/types";
+import { VENUE_CONFIG } from "@/lib/venueConfig";
 
 const VENUE_SYMBOLS = {
-  OKX: ["BTC-USDT-SWAP", "ETH-USDT-SWAP", "SOL-USDT-SWAP"],
-  Bybit: ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
-  Deribit: ["BTC-PERPETUAL", "ETH-PERPETUAL", "SOL_USDC-PERPETUAL"],
+  OKX: VENUE_CONFIG.OKX.symbols,
+  Bybit: VENUE_CONFIG.Bybit.symbols,
+  Deribit: VENUE_CONFIG.Deribit.symbols,
 } as const;
 
 export default function Page() {
   const dispatch = useAppDispatch();
 
-  const [venue, setVenue] = useState<"OKX" | "Bybit" | "Deribit">("OKX");
+  const [venue, setVenue] = useState<Venue>("OKX");
   const [symbol, setSymbol] = useState<string>(VENUE_SYMBOLS.OKX[0]);
 
   const connectionStatus = useAppSelector(selectBookStatus(venue, symbol));
@@ -42,18 +38,11 @@ export default function Page() {
   };
 
   useEffect(() => {
-    const key = `${venue}:${symbol}`;
     dispatch(connectBook({ venue, symbol }));
     return () => {
       dispatch(disconnectBook({ venue, symbol }));
     };
   }, [dispatch, venue, symbol]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(disconnectBook({ venue, symbol }));
-    };
-  }, []);
 
   return (
     <div className="min-h-screen p-4 lg:p-6 space-y-4 lg:space-y-6">
@@ -70,7 +59,7 @@ export default function Page() {
               <label className="text-xs muted font-medium">Venue</label>
               <select
                 value={venue}
-                onChange={(e) => handleVenueChange(e.target.value as any)}
+                onChange={(e) => handleVenueChange(e.target.value as Venue)}
                 className="min-w-[120px] max-w-full"
               >
                 <option value="OKX"> OKX</option>
@@ -113,23 +102,20 @@ export default function Page() {
       <BannerDisplay />
 
       <div className="grid gap-4 lg:gap-6 xl:grid-cols-3">
-        {/* Left: Order Book and Simulation History */}
         <div className="xl:col-span-2">
           <OrderBookTable venue={venue} symbol={symbol} levels={50} />
         </div>
 
-        {/* Right: Charts and Metrics */}
-        <div className="flex flex-col gap-4" style={{ height: "372px" }}>
-          <div className="h-60">
+        <div className="flex flex-col gap-4 h-auto xl:h-[372px]">
+          <div className="h-60 flex-shrink-0">
             <DepthChart venue={venue} symbol={symbol} />
           </div>
-          <div className="h-24 mt-12">
+          <div className="flex-1 min-h-[6rem] mt-2 xl:mt-12">
             <MarketStats venue={venue} symbol={symbol} />
           </div>
         </div>
       </div>
 
-      {/* Bottom: Simulation History */}
       <ScenarioTable />
     </div>
   );

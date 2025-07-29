@@ -3,30 +3,11 @@
 import React from "react";
 import { useAppSelector } from "@/store";
 import { selectMarketStats } from "@/store/selectors";
+import { VenueSymbolProps } from "@/lib/types";
+import { formatNumber, formatPrice } from "@/lib/formatUtils";
 
-interface MarketStatsProps {
-  venue: string;
-  symbol: string;
-}
-
-export default function MarketStats({ venue, symbol }: MarketStatsProps) {
+export default function MarketStats({ venue, symbol }: VenueSymbolProps) {
   const stats = useAppSelector(selectMarketStats(venue, symbol));
-
-  const formatNumber = (num: number | null, decimals = 2) => {
-    if (num === null) return "--";
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + "M";
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + "K";
-    }
-    return num.toFixed(decimals);
-  };
-
-  const formatPrice = (price: number | null) => {
-    if (price === null) return "--";
-    return price.toFixed(2);
-  };
 
   return (
     <div className="card bg-black border border-gray-800 p-3 h-full flex flex-col overflow-hidden">

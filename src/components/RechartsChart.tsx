@@ -25,8 +25,15 @@ type Props = {
   midPrice: number;
 };
 
-// Custom tooltip
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: unknown[];
+  label?: unknown;
+}) => {
   if (!active || !payload || !payload.length) return null;
 
   return (
@@ -39,7 +46,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       }}
     >
       <div className="font-medium mb-1">Price: {Number(label).toFixed(2)}</div>
-      {payload.map((entry: any, index: number) => (
+      {(
+        payload as Array<{ color: string; dataKey: string; value?: number }>
+      ).map((entry, index: number) => (
         <div key={index} style={{ color: entry.color }}>
           {entry.dataKey === "bidCum" ? "Bid Depth" : "Ask Depth"}:{" "}
           {entry.value?.toFixed(4)}
@@ -61,7 +70,6 @@ export default function RechartsChart({
         data={data}
         margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
       >
-        {/* Gradient definitions */}
         <defs>
           <linearGradient id="bidFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--bid)" stopOpacity={0.4} />
@@ -96,7 +104,6 @@ export default function RechartsChart({
 
         <Tooltip content={<CustomTooltip />} />
 
-        {/* Bid area (green) - no clipping for now to debug visibility */}
         <Area
           type="stepAfter"
           dataKey="bidCum"
@@ -105,8 +112,6 @@ export default function RechartsChart({
           fill="url(#bidFill)"
           connectNulls={false}
         />
-
-        {/* Ask area (red) - no clipping for now to debug visibility */}
         <Area
           type="stepAfter"
           dataKey="askCum"
@@ -116,7 +121,6 @@ export default function RechartsChart({
           connectNulls={false}
         />
 
-        {/* Mid-price reference line */}
         <ReferenceLine
           x={midPrice}
           stroke="var(--muted)"

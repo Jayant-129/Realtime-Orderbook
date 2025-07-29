@@ -3,12 +3,6 @@ import { RootState } from ".";
 import { L2, OB, Side } from "@/lib/types";
 import { cumulative } from "@/lib/normalize";
 
-/**
- * TODO:
- * - Memoized selectors: selectBook, selectTopN, selectHighlight, selectCumulative, selectImbalance, selectLatestScenario.
- * - Keep derived computations here (Application), not in components.
- */
-
 const selectOrderbooksState = (state: RootState) => state.orderbooks;
 const selectSimsState = (state: RootState) => state.sims;
 const selectUiState = (state: RootState) => state.ui;
@@ -66,19 +60,16 @@ export const selectCumulative = (venue: string, symbol: string) =>
     }
   );
 
-// Highlight price for limit orders
 export const selectHighlight = (venue: string, symbol: string, side?: Side) =>
   createSelector([selectSimsState], (sims): number | undefined => {
     if (side) {
-      // If side is specified, look for side-specific highlight
       return sims.lastHighlights[`${venue}:${symbol}:${side}`];
     } else {
-      // For backward compatibility, check both sides
       return (
         sims.lastHighlights[`${venue}:${symbol}:buy`] ||
         sims.lastHighlights[`${venue}:${symbol}:sell`] ||
         sims.lastHighlights[`${venue}:${symbol}`]
-      ); // Legacy format
+      );
     }
   });
 
@@ -115,7 +106,6 @@ export const selectPendingSims = createSelector(
   (sims) => sims.pending
 );
 
-// Market stats selectors
 export const selectMarketStats = (venue: string, symbol: string) =>
   createSelector([selectBook(venue, symbol)], (book) => {
     if (!book || !book.bids.length || !book.asks.length) {
@@ -149,13 +139,13 @@ export const selectMarketStats = (venue: string, symbol: string) =>
     const midPrice = (bestBid + bestAsk) / 2;
     const spreadPercent = (spread / midPrice) * 100;
 
-    // Calculate volumes for top 10 levels
     const bidVolume = book.bids
       .slice(0, 10)
-      .reduce((sum, [_, size]) => sum + size, 0);
+      .reduce((sum, [, size]) => sum + size, 0);
+
     const askVolume = book.asks
       .slice(0, 10)
-      .reduce((sum, [_, size]) => sum + size, 0);
+      .reduce((sum, [, size]) => sum + size, 0);
 
     return {
       bestBid,

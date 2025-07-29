@@ -4,86 +4,33 @@ import React, { useMemo } from "react";
 import { useAppSelector } from "@/store";
 import { selectCumulative, selectMarketStats } from "@/store/selectors";
 import dynamic from "next/dynamic";
+import { VenueSymbolProps } from "@/lib/types";
+import { calculateChartData, calculateChartDomains } from "@/lib/chartUtils";
+import LoadingState from "./LoadingState";
 
 const RechartsChart = dynamic(() => import("./RechartsChart"), {
   ssr: false,
-  loading: () => (
-    <div className="h-48 flex items-center justify-center text-sm muted">
-      Loading chart...
-    </div>
-  ),
+  loading: () => <LoadingState message="Loading chart..." />,
 });
 
-type Props = { venue: "OKX" | "Bybit" | "Deribit"; symbol: string };
-export default function DepthChart({ venue, symbol }: Props) {
+export default React.memo(function DepthChart({
+  venue,
+  symbol,
+}: VenueSymbolProps) {
   const { bidCum, askCum } = useAppSelector(selectCumulative(venue, symbol));
   const stats = useAppSelector(selectMarketStats(venue, symbol));
 
   const midPrice = stats.midPrice;
 
-  const chartData = useMemo(() => {
-    if ((!bidCum.length && !askCum.length) || !midPrice) return [];
+  const chartData = useMemo(
+    () => calculateChartData(bidCum, askCum, midPrice),
+    [bidCum, askCum, midPrice]
+  );
 
-    const allPoints = new Map<
-      number,
-      { price: number; bidCum?: number; askCum?: number }
-    >();
-    bidCum.forEach(({ price, cum }) => {
-      if (price <= midPrice) {
-        allPoints.set(price, { price, bidCum: cum });
-      }
-    });
-
-    askCum.forEach(({ price, cum }) => {
-      if (price >= midPrice) {
-        const existing = allPoints.get(price);
-        if (existing) {
-          existing.askCum = cum;
-        } else {
-          allPoints.set(price, { price, askCum: cum });
-        }
-      }
-    });
-
-    if (!allPoints.has(midPrice)) {
-      allPoints.set(midPrice, { price: midPrice });
-    }
-
-    return Array.from(allPoints.values()).sort((a, b) => a.price - b.price);
-  }, [bidCum, askCum, midPrice]);
-
-  const domains = useMemo((): {
-    xDomain: [number, number];
-    yDomain: [number, number];
-  } => {
-    if (!chartData.length || !midPrice) {
-      return { xDomain: [0, 100], yDomain: [0, 100] };
-    }
-
-    const maxBidCum =
-      bidCum.length > 0 ? Math.max(...bidCum.map((d) => d.cum)) : 0;
-    const maxAskCum =
-      askCum.length > 0 ? Math.max(...askCum.map((d) => d.cum)) : 0;
-    const maxCum = Math.max(maxBidCum, maxAskCum);
-
-    const dataSpread =
-      chartData.length > 0
-        ? Math.max(...chartData.map((d) => d.price)) -
-          Math.min(...chartData.map((d) => d.price))
-        : midPrice * 0.02;
-    const midSpread = Math.max(midPrice * 0.01, dataSpread / 4);
-
-    const minPrice = Math.min(...chartData.map((d) => d.price));
-    const maxPrice = Math.max(...chartData.map((d) => d.price));
-
-    const xMin = Math.min(midPrice - midSpread, minPrice);
-    const xMax = Math.max(midPrice + midSpread, maxPrice);
-
-    return {
-      xDomain: [xMin, xMax],
-      yDomain: [0, maxCum * 1.1],
-    };
-  }, [chartData, midPrice, bidCum, askCum]);
+  const domains = useMemo(
+    () => calculateChartDomains(chartData, midPrice, bidCum, askCum),
+    [chartData, midPrice, bidCum, askCum]
+  );
 
   const hasData = chartData.length > 0 && midPrice !== null;
 
@@ -139,4 +86,4 @@ export default function DepthChart({ venue, symbol }: Props) {
       </div>
     </div>
   );
-}
+});

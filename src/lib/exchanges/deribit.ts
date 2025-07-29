@@ -193,3 +193,11 @@ export function deribitSubscribe(instrument: string) {
     },
   };
 }
+
+export function clearOrderbookMaps(instrument?: string) {
+  if (instrument) {
+    orderbookMaps.delete(instrument);
+  } else {
+    orderbookMaps.clear();
+  }
+}

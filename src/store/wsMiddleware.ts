@@ -7,24 +7,22 @@ import {
 } from "./orderbooksSlice";
 import { pushBanner, clearBanner, type Banner } from "./uiSlice";
 import { nextDelay } from "@/lib/backoff";
-import { OKX_WS, okxSubscribe, okxParse } from "@/lib/exchanges/okx";
-import { BYBIT_WS, bybitTopic, bybitParse } from "@/lib/exchanges/bybit";
-import {
-  DERIBIT_WS,
-  deribitSubscribe,
-  deribitParse,
-} from "@/lib/exchanges/deribit";
+import { okxSubscribe, okxParse } from "@/lib/exchanges/okx";
+import { bybitTopic, bybitParse } from "@/lib/exchanges/bybit";
+import { deribitSubscribe, deribitParse } from "@/lib/exchanges/deribit";
+import { Venue } from "@/lib/types";
+import { getWSEndpoint } from "@/lib/venueConfig";
 
 export const connectBook = (p: {
-  venue: "OKX" | "Bybit" | "Deribit";
+  venue: Venue;
   symbol: string;
   depth?: number;
 }) => ({ type: "ws/connect", payload: p });
 
-export const disconnectBook = (p: {
-  venue: "OKX" | "Bybit" | "Deribit";
-  symbol: string;
-}) => ({ type: "ws/disconnect", payload: p });
+export const disconnectBook = (p: { venue: Venue; symbol: string }) => ({
+  type: "ws/disconnect",
+  payload: p,
+});
 
 export const wsMiddleware: Middleware = (store) => {
   const sockets = new Map<string, WebSocket>();
@@ -47,23 +45,7 @@ export const wsMiddleware: Middleware = (store) => {
     return `${type}:${key}`;
   }
 
-  function getWSEndpoint(venue: "OKX" | "Bybit" | "Deribit"): string {
-    switch (venue) {
-      case "OKX":
-        return OKX_WS;
-      case "Bybit":
-        return BYBIT_WS;
-      case "Deribit":
-        return DERIBIT_WS;
-      default:
-        return "";
-    }
-  }
-
-  function getSubscribePayload(
-    venue: "OKX" | "Bybit" | "Deribit",
-    symbol: string
-  ): any {
+  function getSubscribePayload(venue: Venue, symbol: string): unknown {
     switch (venue) {
       case "OKX":
         return okxSubscribe(symbol);
@@ -76,7 +58,7 @@ export const wsMiddleware: Middleware = (store) => {
     }
   }
 
-  function parseMessage(venue: "OKX" | "Bybit" | "Deribit", msg: unknown) {
+  function parseMessage(venue: Venue, msg: unknown) {
     switch (venue) {
       case "OKX":
         return okxParse(msg);
@@ -116,7 +98,7 @@ export const wsMiddleware: Middleware = (store) => {
           connectionStates.set(key, "error");
           disconnect(key);
           setTimeout(() => {
-            connect(venue as any, symbol);
+            connect(venue as Venue, symbol);
           }, 1000);
         }
       }
@@ -125,7 +107,10 @@ export const wsMiddleware: Middleware = (store) => {
     staleTimers.set(key, timer);
   }
 
-  function checkDepthQuality(key: string, ob: any) {
+  function checkDepthQuality(
+    key: string,
+    ob: { bids?: unknown[]; asks?: unknown[] }
+  ) {
     const bidCount = ob.bids?.length || 0;
     const askCount = ob.asks?.length || 0;
     const totalLevels = bidCount + askCount;
@@ -222,7 +207,7 @@ export const wsMiddleware: Middleware = (store) => {
         }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = () => {
         connectionStates.set(key, "error");
         store.dispatch(bookError({ key, error: `Connection error` }));
 
@@ -254,7 +239,7 @@ export const wsMiddleware: Middleware = (store) => {
           staleTimers.delete(key);
         }
       };
-    } catch (error) {
+    } catch {
       store.dispatch(bookError({ key, error: `Failed to create connection` }));
       const [venueStr, symbolStr] = key.split(":");
       const displayName = `${venueStr} ${symbolStr}`;
@@ -303,8 +288,6 @@ export const wsMiddleware: Middleware = (store) => {
     depth?: number
   ) {
     const key = getKey(venue, symbol);
-
-    // Clear existing timer
     const existingTimer = timers.get(key);
     if (existingTimer) {
       clearTimeout(existingTimer);
@@ -321,13 +304,20 @@ export const wsMiddleware: Middleware = (store) => {
     timers.set(key, timer);
   }
   return (next) => (action) => {
-    const typedAction = action as any;
+    const typedAction = action as { type: string; payload?: unknown };
 
     if (typedAction.type === "ws/connect") {
-      const { venue, symbol, depth } = typedAction.payload;
+      const { venue, symbol, depth } = typedAction.payload as {
+        venue: Venue;
+        symbol: string;
+        depth?: number;
+      };
       connect(venue, symbol, depth);
     } else if (typedAction.type === "ws/disconnect") {
-      const { venue, symbol } = typedAction.payload;
+      const { venue, symbol } = typedAction.payload as {
+        venue: Venue;
+        symbol: string;
+      };
       const key = getKey(venue, symbol);
       disconnect(key);
     }

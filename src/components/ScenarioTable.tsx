@@ -3,11 +3,6 @@
 import React from "react";
 import { useAppSelector } from "@/store";
 
-/**
- * Simulation history table showing recent order simulation results
- * Features: time-sorted results, metric highlighting, responsive layout
- */
-
 export default function ScenarioTable() {
   const simState = useAppSelector((state) => state.sims);
   const history = simState.history || [];
@@ -51,7 +46,7 @@ export default function ScenarioTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/50">
-              {history.slice(0, 10).map((scenario, index) => (
+              {history.slice(0, 10).map((scenario) => (
                 <tr key={scenario.id} className="hover:bg-black/30">
                   <td className="py-2 px-3 font-mono">
                     {scenario.results.length > 0
@@ -63,9 +58,7 @@ export default function ScenarioTable() {
                       ? scenario.results[0].venue
                       : "-"}
                   </td>
-                  <td className="py-2 px-3 font-mono text-sm">
-                    {/* Symbol would be extracted from venue key or input */}-
-                  </td>
+                  <td className="py-2 px-3 font-mono text-sm"> -</td>
                   <td className="py-2 px-3">{scenario.input.type}</td>
                   <td className="py-2 px-3">
                     <span

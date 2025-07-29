@@ -9,21 +9,21 @@ import {
   simCompleted,
 } from "@/store/simulationsSlice";
 import { simulate } from "@/lib/simulator";
-import { z } from "zod";
+import { VenueSymbolProps } from "@/lib/types";
+import { OrderFormSchema, OrderFormType } from "@/lib/schemas";
+import { ZodError } from "zod";
 
-const FormSchema = z.object({
-  type: z.enum(["market", "limit"]),
-  side: z.enum(["buy", "sell"]),
-  price: z.number().positive().optional(),
-  qty: z.number().positive(),
-  delayMs: z.number().min(0),
-});
+interface SimulationResult {
+  estFillPct: number;
+  estAvgPx: number;
+  estSlippageBps: number;
+  impactQtyLevels: number;
+}
 
 type FormType = "market" | "limit";
 type FormSide = "buy" | "sell";
 
-type Props = { venue: "OKX" | "Bybit" | "Deribit"; symbol: string };
-export default function OrderFormSingle({ venue, symbol }: Props) {
+export default function OrderFormSingle({ venue, symbol }: VenueSymbolProps) {
   const dispatch = useAppDispatch();
   const orderbook = useAppSelector(selectBook(venue, symbol));
   const thresholds = useAppSelector(selectWarningThresholds);
@@ -36,13 +36,13 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
     delayMs: 0,
   });
   const [errors, setErrors] = useState<string[]>([]);
-  const [lastResult, setLastResult] = useState<any>(null);
+  const [lastResult, setLastResult] = useState<SimulationResult | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const hasLiveData =
     !!orderbook && (orderbook.bids.length > 0 || orderbook.asks.length > 0);
 
-  const runSimulation = (validated: z.infer<typeof FormSchema>) => {
+  const runSimulation = (validated: OrderFormType) => {
     if (!orderbook) {
       setErrors(["No live orderbook data available"]);
       return;
@@ -59,7 +59,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
           results: [result],
         })
       );
-    } catch (error) {
+    } catch {
       setErrors(["Simulation failed"]);
     }
   };
@@ -72,13 +72,12 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
     }
 
     try {
-      const validated = FormSchema.parse({
+      const validated = OrderFormSchema.parse({
         ...form,
         price: form.type === "limit" ? form.price : undefined,
       });
 
       if (validated.delayMs === 0) {
-        // Immediate execution - require live data
         if (!hasLiveData) {
           setErrors([
             "Waiting for live data - cannot simulate without orderbook",
@@ -87,7 +86,6 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
         }
         runSimulation(validated);
 
-        // For immediate orders, set highlight right away
         if (validated.type === "limit" && validated.price) {
           dispatch(
             setHighlight({
@@ -97,7 +95,6 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
           );
         }
       } else {
-        // Delayed execution - schedule and check at due time
         const dueTs = Date.now() + validated.delayMs;
 
         dispatch(
@@ -109,7 +106,7 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
         );
 
         timerRef.current = setTimeout(() => {
-          const currentOrderbook = orderbook; // Re-check at execution time
+          const currentOrderbook = orderbook;
           if (
             currentOrderbook &&
             (currentOrderbook.bids.length > 0 ||
@@ -117,7 +114,6 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
           ) {
             runSimulation(validated);
 
-            // For delayed orders, only set highlight when they execute
             if (validated.type === "limit" && validated.price) {
               dispatch(
                 setHighlight({
@@ -133,13 +129,11 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
           }
         }, validated.delayMs);
 
-        setLastResult(null); // Clear immediate results for delayed orders
+        setLastResult(null);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        setErrors(
-          error.issues.map((e: any) => `${e.path.join(".")}: ${e.message}`)
-        );
+      if (error instanceof ZodError) {
+        setErrors(error.issues.map((e) => `${e.path.join(".")}: ${e.message}`));
       } else {
         setErrors(["Validation failed"]);
       }
@@ -264,7 +258,6 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
         </div>
       </div>
 
-      {/* Errors */}
       {errors.length > 0 && (
         <div
           className="text-xs rounded p-3 border"
@@ -280,7 +273,6 @@ export default function OrderFormSingle({ venue, symbol }: Props) {
         </div>
       )}
 
-      {/* Results Metrics Strip */}
       {lastResult && (
         <div className="border-t border-gray-700 pt-4">
           <div className="text-sm font-medium mb-3 text-gray-300">
