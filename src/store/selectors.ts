@@ -114,3 +114,56 @@ export const selectPendingSims = createSelector(
   [selectSimsState],
   (sims) => sims.pending
 );
+
+// Market stats selectors
+export const selectMarketStats = (venue: string, symbol: string) =>
+  createSelector([selectBook(venue, symbol)], (book) => {
+    if (!book || !book.bids.length || !book.asks.length) {
+      return {
+        bestBid: null,
+        bestAsk: null,
+        midPrice: null,
+        spread: null,
+        spreadPercent: null,
+        bidVolume: null,
+        askVolume: null,
+      };
+    }
+
+    const bestBid = book.bids[0]?.[0] || null;
+    const bestAsk = book.asks[0]?.[0] || null;
+
+    if (!bestBid || !bestAsk) {
+      return {
+        bestBid,
+        bestAsk,
+        midPrice: null,
+        spread: null,
+        spreadPercent: null,
+        bidVolume: null,
+        askVolume: null,
+      };
+    }
+
+    const spread = bestAsk - bestBid;
+    const midPrice = (bestBid + bestAsk) / 2;
+    const spreadPercent = (spread / midPrice) * 100;
+
+    // Calculate volumes for top 10 levels
+    const bidVolume = book.bids
+      .slice(0, 10)
+      .reduce((sum, [_, size]) => sum + size, 0);
+    const askVolume = book.asks
+      .slice(0, 10)
+      .reduce((sum, [_, size]) => sum + size, 0);
+
+    return {
+      bestBid,
+      bestAsk,
+      midPrice,
+      spread,
+      spreadPercent,
+      bidVolume,
+      askVolume,
+    };
+  });

@@ -9,6 +9,7 @@ import DepthChart from "@/components/DepthChart";
 import ScenarioTable from "@/components/ScenarioTable";
 import BannerDisplay from "@/components/BannerDisplay";
 import SearchableDropdown from "@/components/SearchableDropdown";
+import MarketStats from "@/components/MarketStats";
 import { connectBook, disconnectBook } from "@/store/wsMiddleware";
 
 const VENUE_SYMBOL_PLACEHOLDERS = {
@@ -121,8 +122,13 @@ export default function Page() {
         </div>
 
         {/* Right: Charts and Metrics */}
-        <div className="space-y-4 lg:space-y-6 h-96">
-          <DepthChart venue={venue} symbol={symbol} />
+        <div className="flex flex-col gap-4" style={{ height: "372px" }}>
+          <div className="h-60">
+            <DepthChart venue={venue} symbol={symbol} />
+          </div>
+          <div className="h-24 mt-12">
+            <MarketStats venue={venue} symbol={symbol} />
+          </div>
         </div>
       </div>
 

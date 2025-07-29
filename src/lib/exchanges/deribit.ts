@@ -60,21 +60,6 @@ function parseOrderLevel(
   return [numPrice, numSize];
 }
 
-function applySnapshot(
-  maps: OrderbookMaps,
-  bids?: OrderLevel[],
-  asks?: OrderLevel[]
-) {
-  maps.bids.clear();
-  maps.asks.clear();
-  bids?.forEach(([price, size]) => {
-    if (!isNaN(price) && !isNaN(size) && price > 0) maps.bids.set(price, size);
-  });
-  asks?.forEach(([price, size]) => {
-    if (!isNaN(price) && !isNaN(size) && price > 0) maps.asks.set(price, size);
-  });
-}
-
 function applyChanges(
   maps: OrderbookMaps,
   changes: OrderChange[] | undefined,

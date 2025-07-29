@@ -85,7 +85,7 @@ export default function OrderBookTable({ venue, symbol, levels = 100 }: Props) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr
-                      className="border-b orderbook-header"
+                      className="border-b orderbook-header bg-gray-800"
                       style={{
                         borderColor: "var(--divider)",
                       }}
@@ -147,7 +147,7 @@ export default function OrderBookTable({ venue, symbol, levels = 100 }: Props) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr
-                      className="border-b orderbook-header"
+                      className="border-b orderbook-header bg-gray-800"
                       style={{
                         borderColor: "var(--divider)",
                       }}

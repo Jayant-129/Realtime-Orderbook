@@ -81,7 +81,7 @@ body {
 /* Orderbook header with blur effect */
 .orderbook-header {
   backdrop-filter: blur(8px);
-  background-color: rgba(25, 34, 53, 0.7) !important; /* semi-transparent version of surface-3 */
+  background-color: rgba(17, 24, 39, 0.95) !important;
 }
 
 /* Highlighted rows in order book */
