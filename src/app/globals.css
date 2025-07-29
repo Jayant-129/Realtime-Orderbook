@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #000000; /* pure black */
-  --surface-1: #0a0a0a; /* very dark gray */
-  --surface-2: #050505; /* almost black */
-  --surface-3: #111111; /* dark raised cards */
+  --bg: #000000;
+  --surface-1: #0a0a0a; 
+  --surface-2: #050505; 
+  --surface-3: #111111; 
 
   --text: #ffffff;
   --muted: #cccccc;
@@ -24,12 +24,12 @@
   --grid: #1a1a1a;
   --tooltip: #000000;
 
-  /* Tailwind compatibility */
+
   --background: var(--bg);
   --foreground: var(--text);
 }
 
-/* Font family settings */
+
 html,
 body {
   background: var(--bg);
@@ -47,7 +47,7 @@ body {
   color: var(--muted);
 }
 
-/* Custom scrollbar styling */
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -65,7 +65,7 @@ body {
   background-color: var(--muted);
 }
 
-/* Table header styling for orderbook */
+
 .sticky {
   position: sticky;
   top: 0;
@@ -78,13 +78,12 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
 }
 
-/* Orderbook header with blur effect */
 .orderbook-header {
   backdrop-filter: blur(8px);
   background-color: rgba(0, 0, 0, 0.95) !important;
 }
 
-/* Highlighted rows in order book */
+
 .orderbook-row.highlight {
   background-color: rgba(96, 165, 250, 0.1);
   position: relative;
@@ -136,13 +135,12 @@ button:hover {
   outline-offset: 2px;
 }
 
-/* OrderBook highlight styling */
+
 .highlight {
   box-shadow: inset 3px 0 0 var(--accent);
   background: rgba(96, 165, 250, 0.08);
 }
 
-/* Simulated Order styling */
 .simulated-order-icon {
   display: inline-block;
   animation: simulated-order-pulse 2s infinite;
@@ -151,13 +149,12 @@ button:hover {
   font-size: 0.85em;
 }
 
-/* Buy order indicator (up triangle) */
+
 .simulated-buy {
   color: var(--bid);
   font-weight: bold;
 }
 
-/* Sell order indicator (down triangle) */
 .simulated-sell {
   color: var(--ask);
   font-weight: bold;
@@ -175,7 +172,7 @@ button:hover {
   }
 }
 
-/* OrderBook row hover effect */
+
 .orderbook-row {
   border-color: var(--divider);
 }
@@ -184,7 +181,7 @@ button:hover {
   background: var(--surface-1);
 }
 
-/* Themed form controls */
+
 .side-button-buy {
   border-color: var(--bid);
   background: rgba(25, 195, 138, 0.1);
@@ -197,7 +194,6 @@ button:hover {
   color: var(--ask);
 }
 
-/* Imbalance meter animations */
 @keyframes pulse-warning {
   0%,
   100% {
@@ -212,7 +208,6 @@ button:hover {
   animation: pulse-warning 2s infinite;
 }
 
-/* Banner animations */
 @keyframes slideInRight {
   from {
     transform: translateX(100%);

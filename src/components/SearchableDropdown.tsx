@@ -2,11 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 
-/**
- * Enhanced searchable dropdown for symbol selection
- * Features: Search filtering, keyboard navigation, responsive design
- */
-
 type SearchableDropdownProps = {
   value: string;
   options: readonly string[];
@@ -30,12 +25,10 @@ export default function SearchableDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Filter options based on search term
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -52,7 +45,6 @@ export default function SearchableDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
       if (e.key === "Enter" || e.key === "ArrowDown") {
