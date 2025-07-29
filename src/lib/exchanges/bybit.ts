@@ -68,17 +68,16 @@ export function bybitParse(msg: unknown): OB | undefined {
       topic?: string;
       type?: string;
       data?: {
-        s?: string; // symbol
-        b?: [string, string][]; // bids
-        a?: [string, string][]; // asks
-        u?: number; // update id
-        seq?: number; // sequence
+        s?: string;
+        b?: [string, string][];
+        a?: [string, string][];
+        u?: number;
+        seq?: number;
       };
       ts?: number;
     };
 
     if (parsed.op === "subscribe" && parsed.success !== undefined) {
-      console.info("Bybit subscription response:", parsed);
       return undefined;
     }
 
@@ -88,7 +87,6 @@ export function bybitParse(msg: unknown): OB | undefined {
 
     const topicMatch = parsed.topic.match(/^orderbook\.\d+\.(.+)$/);
     if (!topicMatch) {
-      console.warn("Bybit: Unrecognized topic format:", parsed.topic);
       return undefined;
     }
 
@@ -99,9 +97,6 @@ export function bybitParse(msg: unknown): OB | undefined {
     const maps = getOrCreateMaps(symbol);
 
     if (u !== undefined && u <= maps.lastUpdateId && maps.lastUpdateId > 0) {
-      console.info(
-        `Bybit: Skipping old update ${u} (current: ${maps.lastUpdateId})`
-      );
       return undefined;
     }
 
@@ -115,21 +110,18 @@ export function bybitParse(msg: unknown): OB | undefined {
         maps.lastUpdateId = u;
       }
     } else if (type === "delta") {
-      // Apply incremental updates
       if (b) processOrderData(b, maps.bids);
       if (a) processOrderData(a, maps.asks);
       if (u !== undefined) {
         maps.lastUpdateId = u;
       }
     } else {
-      console.warn("Bybit: Unknown data type:", type);
       return undefined;
     }
 
     const { bids, asks } = materializeOrderbook(symbol);
 
     if (bids.length === 0 && asks.length === 0) {
-      console.warn("Bybit: Empty orderbook for", symbol);
       return undefined;
     }
 
@@ -138,8 +130,7 @@ export function bybitParse(msg: unknown): OB | undefined {
       asks,
       ts: parsed.ts || Date.now(),
     };
-  } catch (error) {
-    console.error("Bybit: Parse error:", error);
+  } catch {
     return undefined;
   }
 }

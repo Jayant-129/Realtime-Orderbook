@@ -1,4 +1,5 @@
 import { OB } from "../types";
+import { logger } from "../logger";
 
 export const OKX_WS = "wss://ws.okx.com:8443/ws/v5/public";
 
@@ -8,8 +9,6 @@ export function okxSubscribe(instId: string) {
     const base = instId.replace("USDT", "");
     formattedInstId = `${base}-USDT`;
   }
-
-  console.log(`OKX: Subscribing to instrument ${formattedInstId}`);
 
   return {
     op: "subscribe",
@@ -93,65 +92,76 @@ export function okxParse(msg: unknown): OB | undefined {
       }>;
     };
 
-    // Handle subscription confirmation
     if (parsed.event === "subscribe") {
-      console.info("OKX subscription confirmed:", parsed);
+      const subscriptionSymbol = parsed.arg?.instId || "unknown";
+      logger.exchangeSubscription("OKX", subscriptionSymbol, true);
       return undefined;
     }
-
-    // Handle errors
     if (parsed.event === "error") {
-      console.error("OKX subscription error:", parsed);
+      const subscriptionSymbol = parsed.arg?.instId || "unknown";
+      logger.exchangeSubscription("OKX", subscriptionSymbol, false);
+      logger.error("OKX subscription error", {
+        exchange: "OKX",
+        symbol: subscriptionSymbol,
+        code: parsed.code,
+        message: parsed.msg,
+      });
       return undefined;
     }
-
-    // Validate message has data
     if (!parsed.data || !parsed.data[0]) {
       return undefined;
     }
 
-    // Extract symbol from message
     const symbol = parsed.arg?.instId;
     if (!symbol) {
-      console.warn("OKX: Missing symbol in message");
+      logger.warn("Missing symbol in message", {
+        exchange: "OKX",
+        action: "parse_message",
+      });
       return undefined;
     }
 
     const data = parsed.data[0];
     const { bids: b, asks: a } = data;
 
-    // Get action (snapshot or update)
     const action = parsed.action;
     if (!action) {
-      console.warn("OKX: Missing action in message");
+      logger.warn("Missing action in message", {
+        exchange: "OKX",
+        symbol,
+        action: "parse_message",
+      });
       return undefined;
     }
 
     const maps = getOrCreateMaps(symbol);
 
     if (action === "snapshot") {
-      // Clear existing data for a fresh snapshot
       maps.bids.clear();
       maps.asks.clear();
-
-      // Process the snapshot data
       if (b) processOrderData(b, maps.bids);
       if (a) processOrderData(a, maps.asks);
     } else if (action === "update") {
-      // Apply incremental updates
       if (b) processOrderData(b, maps.bids);
       if (a) processOrderData(a, maps.asks);
     } else {
-      console.warn("OKX: Unknown action type:", action);
+      logger.warn("Unknown action type", {
+        exchange: "OKX",
+        symbol,
+        action,
+        receivedAction: action,
+      });
       return undefined;
     }
 
-    // Create the final orderbook object
     const { bids, asks } = materializeOrderbook(symbol);
 
-    // Verify we have data
     if (bids.length === 0 && asks.length === 0) {
-      console.warn("OKX: Empty orderbook for", symbol);
+      logger.warn("Empty orderbook received", {
+        exchange: "OKX",
+        symbol,
+        action: "validate_orderbook",
+      });
       return undefined;
     }
 
@@ -161,7 +171,7 @@ export function okxParse(msg: unknown): OB | undefined {
       ts: parseInt(data.ts) || Date.now(),
     };
   } catch (error) {
-    console.error("OKX: Parse error:", error);
+    logger.exchangeError("OKX", "unknown", error as Error, "parse_message");
     return undefined;
   }
 }

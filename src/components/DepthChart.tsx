@@ -34,26 +34,6 @@ export default React.memo(function DepthChart({
 
   const hasData = chartData.length > 0 && midPrice !== null;
 
-  React.useEffect(() => {
-    console.log("DepthChart debug:", {
-      venue,
-      symbol,
-      bidCumLength: bidCum.length,
-      askCumLength: askCum.length,
-      midPrice,
-      chartDataLength: chartData.length,
-      hasData,
-    });
-  }, [
-    venue,
-    symbol,
-    bidCum.length,
-    askCum.length,
-    midPrice,
-    chartData.length,
-    hasData,
-  ]);
-
   if (!hasData) {
     return (
       <div className="card p-4">

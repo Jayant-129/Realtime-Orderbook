@@ -25,40 +25,46 @@ type Props = {
   midPrice: number;
 };
 
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: unknown[];
-  label?: unknown;
-}) => {
-  if (!active || !payload || !payload.length) return null;
+const CustomTooltip = React.memo(
+  ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: unknown[];
+    label?: unknown;
+  }) => {
+    if (!active || !payload || !payload.length) return null;
 
-  return (
-    <div
-      className="p-3 rounded border text-xs"
-      style={{
-        backgroundColor: "var(--tooltip)",
-        borderColor: "var(--divider)",
-        color: "var(--text)",
-      }}
-    >
-      <div className="font-medium mb-1">Price: {Number(label).toFixed(2)}</div>
-      {(
-        payload as Array<{ color: string; dataKey: string; value?: number }>
-      ).map((entry, index: number) => (
-        <div key={index} style={{ color: entry.color }}>
-          {entry.dataKey === "bidCum" ? "Bid Depth" : "Ask Depth"}:{" "}
-          {entry.value?.toFixed(4)}
+    return (
+      <div
+        className="p-3 rounded border text-xs"
+        style={{
+          backgroundColor: "var(--tooltip)",
+          borderColor: "var(--divider)",
+          color: "var(--text)",
+        }}
+      >
+        <div className="font-medium mb-1">
+          Price: {Number(label).toFixed(2)}
         </div>
-      ))}
-    </div>
-  );
-};
+        {(
+          payload as Array<{ color: string; dataKey: string; value?: number }>
+        ).map((entry, index: number) => (
+          <div key={index} style={{ color: entry.color }}>
+            {entry.dataKey === "bidCum" ? "Bid Depth" : "Ask Depth"}:{" "}
+            {entry.value?.toFixed(4)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+);
 
-export default function RechartsChart({
+CustomTooltip.displayName = "CustomTooltip";
+
+export default React.memo(function RechartsChart({
   data,
   xDomain,
   yDomain,
@@ -130,4 +136,4 @@ export default function RechartsChart({
       </ComposedChart>
     </ResponsiveContainer>
   );
-}
+});

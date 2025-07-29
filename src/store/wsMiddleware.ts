@@ -12,6 +12,7 @@ import { bybitTopic, bybitParse } from "@/lib/exchanges/bybit";
 import { deribitSubscribe, deribitParse } from "@/lib/exchanges/deribit";
 import { Venue } from "@/lib/types";
 import { getWSEndpoint } from "@/lib/venueConfig";
+import { logger } from "@/lib/logger";
 
 export const connectBook = (p: {
   venue: Venue;
@@ -33,6 +34,30 @@ export const wsMiddleware: Middleware = (store) => {
     string,
     "connecting" | "connected" | "error" | "disconnected"
   >();
+  const connectionStartTimes = new Map<string, number>();
+  const errorTimers = new Map<string, NodeJS.Timeout>();
+
+  const ERROR_BANNER_GRACE_PERIOD = 5000;
+  const INITIAL_RETRY_ATTEMPTS = 3;
+  const STALE_CONNECTION_TIMEOUT = 30000;
+
+  function clearAllBanners(key: string) {
+    const bannerTypes = ["connecting", "error", "stale", "degraded"] as const;
+    bannerTypes.forEach((type) => {
+      store.dispatch(clearBanner(getBannerKey(type, key)));
+    });
+  }
+
+  function cleanupTimers(key: string) {
+    const timerMaps = [timers, staleTimers, errorTimers];
+    timerMaps.forEach((map) => {
+      const timer = map.get(key);
+      if (timer) {
+        clearTimeout(timer);
+        map.delete(key);
+      }
+    });
+  }
 
   function getKey(venue: string, symbol: string): string {
     return `${venue}:${symbol}`;
@@ -82,7 +107,7 @@ export const wsMiddleware: Middleware = (store) => {
       const lastUpdate = state.orderbooks.lastUpdateTs[key];
       const now = Date.now();
 
-      if (!lastUpdate || now - lastUpdate > 30000) {
+      if (!lastUpdate || now - lastUpdate > STALE_CONNECTION_TIMEOUT) {
         const [venue, symbol] = key.split(":");
         const displayName = `${venue} ${symbol}`;
 
@@ -102,7 +127,7 @@ export const wsMiddleware: Middleware = (store) => {
           }, 1000);
         }
       }
-    }, 30000);
+    }, STALE_CONNECTION_TIMEOUT);
 
     staleTimers.set(key, timer);
   }
@@ -164,14 +189,22 @@ export const wsMiddleware: Middleware = (store) => {
     }
 
     connectionStates.set(key, "connecting");
+    if (!connectionStartTimes.has(key)) {
+      connectionStartTimes.set(key, Date.now());
+    }
+    const currentAttempts = attempts.get(key) || 0;
+
     store.dispatch(bookConnecting({ key }));
-    store.dispatch(
-      pushBanner({
-        id: getBannerKey("connecting", key),
-        type: "info",
-        message: `Connecting to ${displayName}...`,
-      })
-    );
+
+    if (currentAttempts === 0) {
+      store.dispatch(
+        pushBanner({
+          id: getBannerKey("connecting", key),
+          type: "info",
+          message: `Connecting to ${displayName}...`,
+        })
+      );
+    }
 
     try {
       const ws = new WebSocket(endpoint);
@@ -183,9 +216,17 @@ export const wsMiddleware: Middleware = (store) => {
         store.dispatch(clearBanner(getBannerKey("connecting", key)));
         store.dispatch(clearBanner(getBannerKey("error", key)));
         store.dispatch(clearBanner(getBannerKey("stale", key)));
+
         attempts.set(key, 0);
+        connectionStartTimes.delete(key);
+
+        const errorTimer = errorTimers.get(key);
+        if (errorTimer) {
+          clearTimeout(errorTimer);
+          errorTimers.delete(key);
+        }
+
         const payload = getSubscribePayload(venue, symbol);
-        console.log(`Subscribing to ${displayName} with payload:`, payload);
         if (payload) {
           ws.send(JSON.stringify(payload));
         }
@@ -203,7 +244,15 @@ export const wsMiddleware: Middleware = (store) => {
             checkDepthQuality(key, ob);
           }
         } catch (error) {
-          console.warn(`Failed to parse message for ${key}:`, error);
+          logger.error(
+            "Failed to parse WebSocket message",
+            {
+              exchange: key.split("-")[0],
+              symbol: key.split("-")[1],
+              action: "parse_message",
+            },
+            error as Error
+          );
         }
       };
 
@@ -211,45 +260,63 @@ export const wsMiddleware: Middleware = (store) => {
         connectionStates.set(key, "error");
         store.dispatch(bookError({ key, error: `Connection error` }));
 
-        const [venueStr, symbolStr] = key.split(":");
-        const displayName = `${venueStr} ${symbolStr}`;
-        store.dispatch(
-          pushBanner({
-            id: getBannerKey("error", key),
-            type: "error",
-            message: `Connection error for ${displayName}`,
-          })
-        );
+        const currentAttempts = attempts.get(key) || 0;
+        const connectionStartTime = connectionStartTimes.get(key) || Date.now();
+        const timeSinceStart = Date.now() - connectionStartTime;
+        if (
+          timeSinceStart > ERROR_BANNER_GRACE_PERIOD &&
+          currentAttempts >= INITIAL_RETRY_ATTEMPTS
+        ) {
+          const existingErrorTimer = errorTimers.get(key);
+          if (existingErrorTimer) {
+            clearTimeout(existingErrorTimer);
+          }
+
+          const errorTimer = setTimeout(() => {
+            if (connectionStates.get(key) === "error") {
+              store.dispatch(
+                pushBanner({
+                  id: getBannerKey("error", key),
+                  type: "error",
+                  message: `Connection unstable for ${displayName}. Retrying...`,
+                })
+              );
+            }
+          }, 1000);
+
+          errorTimers.set(key, errorTimer);
+        }
       };
 
       ws.onclose = (event) => {
         connectionStates.set(key, "disconnected");
+        sockets.delete(key);
+        const staleTimer = staleTimers.get(key);
+        if (staleTimer) {
+          clearTimeout(staleTimer);
+          staleTimers.delete(key);
+        }
 
         if (event.code !== 1000) {
           scheduleReconnect(venue, symbol, depth);
         } else {
           store.dispatch(clearBanner(getBannerKey("connecting", key)));
         }
-
-        sockets.delete(key);
-
-        const staleTimer = staleTimers.get(key);
-        if (staleTimer) {
-          clearTimeout(staleTimer);
-          staleTimers.delete(key);
-        }
       };
     } catch {
       store.dispatch(bookError({ key, error: `Failed to create connection` }));
-      const [venueStr, symbolStr] = key.split(":");
-      const displayName = `${venueStr} ${symbolStr}`;
-      store.dispatch(
-        pushBanner({
-          id: getBannerKey("error", key),
-          type: "error",
-          message: `Failed to connect to ${displayName}`,
-        })
-      );
+
+      const currentAttempts = attempts.get(key) || 0;
+      if (currentAttempts >= INITIAL_RETRY_ATTEMPTS) {
+        store.dispatch(
+          pushBanner({
+            id: getBannerKey("error", key),
+            type: "error",
+            message: `Failed to connect to ${displayName}`,
+          })
+        );
+      }
+
       scheduleReconnect(venue, symbol, depth);
     }
   }
@@ -261,25 +328,12 @@ export const wsMiddleware: Middleware = (store) => {
       sockets.delete(key);
     }
 
-    const timer = timers.get(key);
-    if (timer) {
-      clearTimeout(timer);
-      timers.delete(key);
-    }
-
-    const staleTimer = staleTimers.get(key);
-    if (staleTimer) {
-      clearTimeout(staleTimer);
-      staleTimers.delete(key);
-    }
-
-    store.dispatch(clearBanner(getBannerKey("connecting", key)));
-    store.dispatch(clearBanner(getBannerKey("error", key)));
-    store.dispatch(clearBanner(getBannerKey("stale", key)));
-    store.dispatch(clearBanner(getBannerKey("degraded", key)));
+    cleanupTimers(key);
+    clearAllBanners(key);
 
     attempts.delete(key);
     connectionStates.delete(key);
+    connectionStartTimes.delete(key);
   }
 
   function scheduleReconnect(
@@ -288,20 +342,34 @@ export const wsMiddleware: Middleware = (store) => {
     depth?: number
   ) {
     const key = getKey(venue, symbol);
+
     const existingTimer = timers.get(key);
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
 
     const currentAttempts = attempts.get(key) || 0;
-    const delay = nextDelay(currentAttempts);
-    attempts.set(key, currentAttempts + 1);
+    if (currentAttempts < INITIAL_RETRY_ATTEMPTS) {
+      const delay = Math.min(1000 * (currentAttempts + 1), 3000);
+      attempts.set(key, currentAttempts + 1);
 
-    const timer = setTimeout(() => {
-      connect(venue, symbol, depth);
-    }, delay);
+      const timer = setTimeout(() => {
+        if (connectionStates.get(key) === "disconnected") {
+          connect(venue, symbol, depth);
+        }
+      }, delay);
 
-    timers.set(key, timer);
+      timers.set(key, timer);
+    } else {
+      const delay = nextDelay(currentAttempts);
+      attempts.set(key, currentAttempts + 1);
+
+      const timer = setTimeout(() => {
+        connect(venue, symbol, depth);
+      }, delay);
+
+      timers.set(key, timer);
+    }
   }
   return (next) => (action) => {
     const typedAction = action as { type: string; payload?: unknown };

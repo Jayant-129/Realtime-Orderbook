@@ -1,7 +1,6 @@
 # Real-Time Orderbook Viewer with Order Simulation
 
-**Author:** Jayant Agrawal  
-**Assignment:** GoQuant Technical Assessment
+**Author:** Jayant Agrawal
 
 ## Overview
 
@@ -26,14 +25,13 @@ A Next.js application that displays real-time orderbook data from multiple crypt
   - Slippage estimation
   - Time to fill analysis
 - **Timing Simulation**: Test different execution timings (immediate, 5s, 10s, 30s delays)
-- **Multi-Exchange Comparison**: Side-by-side venue analysis
 
 ## Technical Stack
 
 - **Framework**: Next.js 14 with App Router
-- **State Management**: Redux Toolkit with RTK Query
+- **State Management**: Redux Toolkit (RTK) with RTK Query
 - **Real-Time Data**: WebSocket connections with automatic reconnection
-- **Charts**: Recharts for market depth visualization
+- **Charts**: Recharts for market depth visualization and orderbook charts
 - **Styling**: Tailwind CSS for responsive design
 - **TypeScript**: Full type safety throughout the application
 
@@ -81,6 +79,32 @@ bun dev
 
 4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
+### Build for Production
+
+To create a production build:
+
+```bash
+npm run build
+# or
+yarn build
+# or
+pnpm build
+# or
+bun run build
+```
+
+To start the production server:
+
+```bash
+npm start
+# or
+yarn start
+# or
+pnpm start
+# or
+bun start
+```
+
 ## API Integration
 
 ### Supported Exchanges
@@ -121,19 +145,54 @@ bun dev
 
 ```
 src/
-├── app/                    # Next.js App Router pages
-├── components/             # React components
-│   ├── OrderBookTable.tsx  # Orderbook display component
-│   ├── DepthChart.tsx      # Market depth visualization
-│   ├── OrderFormSingle.tsx # Order simulation form
-│   └── MarketStats.tsx     # Market statistics display
-├── lib/                    # Utility functions and configurations
-│   ├── exchanges/          # Exchange-specific API integrations
-│   ├── simulator.ts        # Order simulation logic
-│   └── types.ts           # TypeScript type definitions
-└── store/                  # Redux store and slices
-    ├── orderbooksSlice.ts  # Orderbook state management
-    └── wsMiddleware.ts     # WebSocket middleware
+├── app/                      # Next.js App Router
+│   ├── layout.tsx           # Root layout
+
+## Production Optimizations
+
+This application has been optimized for production deployment with the following enhancements:
+
+- **Production-Safe Logging**: All console statements replaced with environment-aware structured logging
+- **Performance Optimizations**: React components optimized with `React.memo` and efficient re-rendering
+- **Error Handling**: Comprehensive error handling with context for monitoring
+- **Memory Management**: Efficient WebSocket connection management and cleanup
+- **Security**: Production-ready configuration with environment separation
+
+See [PRODUCTION_OPTIMIZATION.md](./PRODUCTION_OPTIMIZATION.md) for detailed information. component
+│   ├── page.tsx             # Home page
+│   ├── globals.css          # Global styles
+│   └── orderbook/           # Orderbook-specific pages
+│       └── page.tsx         # Main orderbook interface
+├── components/               # Reusable React components
+│   ├── BannerDisplay.tsx    # Banner/notification component
+│   ├── DepthChart.tsx       # Market depth visualization charts
+│   ├── LoadingState.tsx     # Loading indicators and states
+│   ├── MarketStats.tsx      # Market statistics display
+│   ├── OrderBookTable.tsx   # Real-time orderbook table
+│   ├── OrderFormSingle.tsx  # Order simulation form
+│   ├── RechartsChart.tsx    # Chart components using Recharts
+│   ├── ScenarioTable.tsx    # Scenario comparison table
+│   └── SearchableDropdown.tsx # Dropdown with search functionality
+├── lib/                      # Utility functions and configurations
+│   ├── backoff.ts           # Exponential backoff implementation
+│   ├── chartUtils.ts        # Chart utility functions
+│   ├── formatUtils.ts       # Data formatting utilities
+│   ├── normalize.ts         # Data normalization functions
+│   ├── schemas.ts           # Zod validation schemas
+│   ├── simulator.ts         # Order simulation logic
+│   ├── types.ts             # TypeScript type definitions
+│   ├── venueConfig.ts       # Exchange configuration
+│   └── exchanges/           # Exchange-specific integrations
+│       ├── bybit.ts         # Bybit API integration
+│       ├── deribit.ts       # Deribit API integration
+│       └── okx.ts           # OKX API integration
+└── store/                    # Redux Toolkit store management
+    ├── index.ts             # Store configuration
+    ├── orderbooksSlice.ts   # Orderbook state management
+    ├── selectors.ts         # Redux selectors
+    ├── simulationsSlice.ts  # Simulation state management
+    ├── uiSlice.ts           # UI state management
+    └── wsMiddleware.ts      # WebSocket middleware
 ```
 
 ## Libraries Used
@@ -163,15 +222,3 @@ src/
 - Optimized re-rendering with React.memo and useMemo
 - Debounced user inputs to prevent excessive API calls
 - Background data cleanup to prevent memory leaks
-
-## Future Enhancements
-
-- [ ] Portfolio simulation across multiple assets
-- [ ] Historical data analysis and backtesting
-- [ ] Advanced order types (Stop-loss, Take-profit)
-- [ ] Real-time P&L tracking for simulated positions
-- [ ] Integration with additional exchanges
-
----
-
-**Note**: This application is developed as part of a technical assessment and is intended for demonstration purposes only. It should not be used for actual trading decisions.
