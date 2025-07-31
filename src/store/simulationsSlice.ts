@@ -4,7 +4,7 @@ import { SimInput, SimResult } from "@/lib/simulator";
 type State = {
   pending: Array<{ id: string; input: SimInput; dueTs: number }>;
   history: Array<{ id: string; input: SimInput; results: SimResult[] }>;
-  lastHighlights: Record<string, number | undefined>; // Keys now follow format "venue:symbol:side"
+  lastHighlights: Record<string, { price: number; qty: number } | undefined>;
 };
 
 const initial: State = { pending: [], history: [], lastHighlights: {} };
@@ -29,9 +29,15 @@ const slice = createSlice({
         s.history = s.history.slice(0, 50);
       }
     },
-    setHighlight: (s, a: PayloadAction<{ key: string; price?: number }>) => {
-      if (a.payload.price !== undefined) {
-        s.lastHighlights[a.payload.key] = a.payload.price;
+    setHighlight: (
+      s,
+      a: PayloadAction<{ key: string; price?: number; qty?: number }>
+    ) => {
+      if (a.payload.price !== undefined && a.payload.qty !== undefined) {
+        s.lastHighlights[a.payload.key] = {
+          price: a.payload.price,
+          qty: a.payload.qty,
+        };
       } else {
         delete s.lastHighlights[a.payload.key];
       }

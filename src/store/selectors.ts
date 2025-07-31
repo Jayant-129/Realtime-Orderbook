@@ -29,15 +29,103 @@ export const selectLastUpdateTs = (venue: string, symbol: string) =>
 
 export const selectTopN = (venue: string, symbol: string, n: number) =>
   createSelector(
-    [selectBook(venue, symbol)],
-    (book): { bids: L2[]; asks: L2[] } => {
+    [selectBook(venue, symbol), selectSimsState],
+    (book, sims): { bids: L2[]; asks: L2[] } => {
       if (!book) {
         return { bids: [], asks: [] };
       }
-      return {
-        bids: book.bids.slice(0, n),
-        asks: book.asks.slice(0, n),
-      };
+
+      let bids = book.bids.slice(0, n);
+      let asks = book.asks.slice(0, n);
+
+      const bidHighlight = sims.lastHighlights[`${venue}:${symbol}:buy`];
+      const askHighlight = sims.lastHighlights[`${venue}:${symbol}:sell`];
+
+      if (bidHighlight !== undefined) {
+        const bidHighlightPrice = bidHighlight.price;
+        const bidHighlightQty = bidHighlight.qty;
+        const bidExistsInVisible = bids.findIndex(
+          ([price]) => Math.abs(price - bidHighlightPrice) < 1e-8
+        );
+
+        if (bidExistsInVisible !== -1) {
+          bids = bids.map(([price, size], index) =>
+            index === bidExistsInVisible
+              ? [price, size + bidHighlightQty]
+              : [price, size]
+          );
+        } else {
+          const bidIndexInBook = book.bids.findIndex(
+            ([price]) => Math.abs(price - bidHighlightPrice) < 1e-8
+          );
+          if (bidIndexInBook !== -1) {
+            bids = book.bids
+              .slice(0, Math.max(n, bidIndexInBook + 1))
+              .map(([price, size], index) =>
+                index === bidIndexInBook
+                  ? [price, size + bidHighlightQty]
+                  : [price, size]
+              );
+          } else {
+            const insertIndex = bids.findIndex(
+              ([price]) => price < bidHighlightPrice
+            );
+            if (insertIndex === -1) {
+              bids = [...bids, [bidHighlightPrice, bidHighlightQty]];
+            } else {
+              bids = [
+                ...bids.slice(0, insertIndex),
+                [bidHighlightPrice, bidHighlightQty],
+                ...bids.slice(insertIndex),
+              ];
+            }
+          }
+        }
+      }
+
+      if (askHighlight !== undefined) {
+        const askHighlightPrice = askHighlight.price;
+        const askHighlightQty = askHighlight.qty;
+        const askExistsInVisible = asks.findIndex(
+          ([price]) => Math.abs(price - askHighlightPrice) < 1e-8
+        );
+
+        if (askExistsInVisible !== -1) {
+          asks = asks.map(([price, size], index) =>
+            index === askExistsInVisible
+              ? [price, size + askHighlightQty]
+              : [price, size]
+          );
+        } else {
+          const askIndexInBook = book.asks.findIndex(
+            ([price]) => Math.abs(price - askHighlightPrice) < 1e-8
+          );
+          if (askIndexInBook !== -1) {
+            asks = book.asks
+              .slice(0, Math.max(n, askIndexInBook + 1))
+              .map(([price, size], index) =>
+                index === askIndexInBook
+                  ? [price, size + askHighlightQty]
+                  : [price, size]
+              );
+          } else {
+            const insertIndex = asks.findIndex(
+              ([price]) => price > askHighlightPrice
+            );
+            if (insertIndex === -1) {
+              asks = [...asks, [askHighlightPrice, askHighlightQty]];
+            } else {
+              asks = [
+                ...asks.slice(0, insertIndex),
+                [askHighlightPrice, askHighlightQty],
+                ...asks.slice(insertIndex),
+              ];
+            }
+          }
+        }
+      }
+
+      return { bids, asks };
     }
   );
 
@@ -63,12 +151,29 @@ export const selectCumulative = (venue: string, symbol: string) =>
 export const selectHighlight = (venue: string, symbol: string, side?: Side) =>
   createSelector([selectSimsState], (sims): number | undefined => {
     if (side) {
-      return sims.lastHighlights[`${venue}:${symbol}:${side}`];
+      return sims.lastHighlights[`${venue}:${symbol}:${side}`]?.price;
     } else {
       return (
-        sims.lastHighlights[`${venue}:${symbol}:buy`] ||
-        sims.lastHighlights[`${venue}:${symbol}:sell`] ||
-        sims.lastHighlights[`${venue}:${symbol}`]
+        sims.lastHighlights[`${venue}:${symbol}:buy`]?.price ||
+        sims.lastHighlights[`${venue}:${symbol}:sell`]?.price ||
+        sims.lastHighlights[`${venue}:${symbol}`]?.price
+      );
+    }
+  });
+
+export const selectHighlightQty = (
+  venue: string,
+  symbol: string,
+  side?: Side
+) =>
+  createSelector([selectSimsState], (sims): number | undefined => {
+    if (side) {
+      return sims.lastHighlights[`${venue}:${symbol}:${side}`]?.qty;
+    } else {
+      return (
+        sims.lastHighlights[`${venue}:${symbol}:buy`]?.qty ||
+        sims.lastHighlights[`${venue}:${symbol}:sell`]?.qty ||
+        sims.lastHighlights[`${venue}:${symbol}`]?.qty
       );
     }
   });

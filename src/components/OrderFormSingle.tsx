@@ -91,6 +91,7 @@ export default function OrderFormSingle({ venue, symbol }: VenueSymbolProps) {
             setHighlight({
               key: `${venue}:${symbol}:${validated.side}`,
               price: validated.price,
+              qty: validated.qty,
             })
           );
         }
@@ -119,6 +120,7 @@ export default function OrderFormSingle({ venue, symbol }: VenueSymbolProps) {
                 setHighlight({
                   key: `${venue}:${symbol}:${validated.side}`,
                   price: validated.price,
+                  qty: validated.qty,
                 })
               );
             }

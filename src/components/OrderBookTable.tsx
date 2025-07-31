@@ -5,6 +5,7 @@ import { useAppSelector } from "@/store";
 import {
   selectTopN,
   selectHighlight,
+  selectHighlightQty,
   selectBookStatus,
 } from "@/store/selectors";
 import { VenueSymbolProps } from "@/lib/types";
@@ -21,6 +22,12 @@ export default function OrderBookTable({
   const { bids, asks } = useAppSelector(selectTopN(venue, symbol, levels));
   const bidHighlight = useAppSelector(selectHighlight(venue, symbol, "buy"));
   const askHighlight = useAppSelector(selectHighlight(venue, symbol, "sell"));
+  const bidHighlightQty = useAppSelector(
+    selectHighlightQty(venue, symbol, "buy")
+  );
+  const askHighlightQty = useAppSelector(
+    selectHighlightQty(venue, symbol, "sell")
+  );
   const connectionStatus = useAppSelector(selectBookStatus(venue, symbol));
 
   const isLoading = connectionStatus === "connecting";
@@ -33,6 +40,27 @@ export default function OrderBookTable({
 
   const shouldHighlightAsk = (price: number): boolean => {
     return askHighlight !== undefined && Math.abs(price - askHighlight) < 1e-8;
+  };
+
+  const isSimulatedLevel = (price: number): boolean => {
+    return (
+      (shouldHighlightBid(price) && bidHighlightQty !== undefined) ||
+      (shouldHighlightAsk(price) && askHighlightQty !== undefined)
+    );
+  };
+
+  const getSimulatedQty = (price: number): number | undefined => {
+    if (shouldHighlightBid(price)) return bidHighlightQty;
+    if (shouldHighlightAsk(price)) return askHighlightQty;
+    return undefined;
+  };
+
+  const getOriginalSize = (price: number, displaySize: number): number => {
+    const simulatedQty = getSimulatedQty(price);
+    if (simulatedQty !== undefined) {
+      return displaySize - simulatedQty;
+    }
+    return displaySize;
   };
 
   const maxBidSize = useMemo(() => {
@@ -105,36 +133,61 @@ export default function OrderBookTable({
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-4">
                   <table className="w-full text-xs">
                     <tbody>
-                      {bids.map(([price, size], i) => (
-                        <tr
-                          key={i}
-                          className={`border-b transition-colors orderbook-row ${
-                            shouldHighlightBid(price) ? "highlight" : ""
-                          }`}
-                          style={{ borderColor: "var(--divider)" }}
-                        >
-                          <td
-                            className="relative text-right py-1.5 font-mono"
-                            style={{ color: "var(--bid)" }}
+                      {bids.map(([price, size], i) => {
+                        const isSimulated = isSimulatedLevel(price);
+                        const simulatedQty = getSimulatedQty(price);
+                        const displaySize = size;
+                        const originalSize = getOriginalSize(price, size);
+                        const isHighlighted = shouldHighlightBid(price);
+                        return (
+                          <tr
+                            key={i}
+                            className={`border-b transition-colors orderbook-row ${
+                              isHighlighted ? "highlight" : ""
+                            }`}
+                            style={{ borderColor: "var(--divider)" }}
                           >
-                            <div
-                              className="absolute top-0 bottom-0 right-0 h-full bg-green-500/20 z-0"
-                              style={{
-                                width: `${getBarWidth(size, false)}%`,
-                                maxWidth: "100%",
-                              }}
-                            />
-                            <span className="relative z-10">
-                              {price.toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="relative text-right py-1.5 font-mono text-gray-300 pr-2">
-                            <span className="relative z-10">
-                              {size.toFixed(4)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                            <td
+                              className="relative text-right py-1.5 font-mono"
+                              style={{ color: "var(--bid)" }}
+                            >
+                              <div
+                                className="absolute top-0 bottom-0 right-0 h-full bg-green-500/20 z-0"
+                                style={{
+                                  width: `${getBarWidth(originalSize, false)}%`,
+                                  maxWidth: "100%",
+                                }}
+                              />
+                              {isSimulated &&
+                                simulatedQty !== undefined &&
+                                originalSize > 0 && (
+                                  <div
+                                    className="absolute top-0 bottom-0 right-0 h-full bg-blue-500/30 z-1"
+                                    style={{
+                                      width: `${getBarWidth(
+                                        simulatedQty,
+                                        false
+                                      )}%`,
+                                      maxWidth: "100%",
+                                    }}
+                                  />
+                                )}
+                              <span className="relative z-10 flex items-center justify-end gap-1">
+                                {isHighlighted &&
+                                  simulatedQty !== undefined && (
+                                    <span className="text-blue-400">🎯</span>
+                                  )}
+                                {price.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="relative text-right py-1.5 font-mono text-gray-300 pr-2">
+                              <span className="relative z-10">
+                                {displaySize.toFixed(4)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -167,36 +220,61 @@ export default function OrderBookTable({
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-4">
                   <table className="w-full text-xs">
                     <tbody>
-                      {asks.map(([price, size], i) => (
-                        <tr
-                          key={i}
-                          className={`border-b transition-colors orderbook-row ${
-                            shouldHighlightAsk(price) ? "highlight" : ""
-                          }`}
-                          style={{ borderColor: "var(--divider)" }}
-                        >
-                          <td
-                            className="relative text-right py-1.5 font-mono"
-                            style={{ color: "var(--ask)" }}
+                      {asks.map(([price, size], i) => {
+                        const isSimulated = isSimulatedLevel(price);
+                        const simulatedQty = getSimulatedQty(price);
+                        const displaySize = size;
+                        const originalSize = getOriginalSize(price, size);
+                        const isHighlighted = shouldHighlightAsk(price);
+                        return (
+                          <tr
+                            key={i}
+                            className={`border-b transition-colors orderbook-row ${
+                              isHighlighted ? "highlight" : ""
+                            }`}
+                            style={{ borderColor: "var(--divider)" }}
                           >
-                            <div
-                              className="absolute top-0 bottom-0 right-0 h-full bg-red-500/20 z-0"
-                              style={{
-                                width: `${getBarWidth(size, true)}%`,
-                                maxWidth: "100%",
-                              }}
-                            />
-                            <span className="relative z-10">
-                              {price.toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="relative text-right py-1.5 font-mono text-gray-300 pr-2">
-                            <span className="relative z-10">
-                              {size.toFixed(4)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                            <td
+                              className="relative text-right py-1.5 font-mono"
+                              style={{ color: "var(--ask)" }}
+                            >
+                              <div
+                                className="absolute top-0 bottom-0 right-0 h-full bg-red-500/20 z-0"
+                                style={{
+                                  width: `${getBarWidth(originalSize, true)}%`,
+                                  maxWidth: "100%",
+                                }}
+                              />
+                              {isSimulated &&
+                                simulatedQty !== undefined &&
+                                originalSize > 0 && (
+                                  <div
+                                    className="absolute top-0 bottom-0 right-0 h-full bg-blue-500/30 z-1"
+                                    style={{
+                                      width: `${getBarWidth(
+                                        simulatedQty,
+                                        true
+                                      )}%`,
+                                      maxWidth: "100%",
+                                    }}
+                                  />
+                                )}
+                              <span className="relative z-10 flex items-center justify-end gap-1">
+                                {isHighlighted &&
+                                  simulatedQty !== undefined && (
+                                    <span className="text-blue-400">**</span>
+                                  )}
+                                {price.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="relative text-right py-1.5 font-mono text-gray-300 pr-2">
+                              <span className="relative z-10">
+                                {displaySize.toFixed(4)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -218,7 +296,7 @@ export default function OrderBookTable({
                 <div className="mt-4">
                   <div className="h-0.5 bg-yellow-500/40 rounded mb-2"></div>
                   <div className="text-xs text-yellow-400 flex items-center gap-1">
-                    ⚠️ Limited market depth available
+                    Limited market depth available
                     <span className="muted ml-1">
                       ({bidCount} bids, {askCount} asks)
                     </span>
